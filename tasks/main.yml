@@ -1,0 +1,64 @@
+---
+- name: install libselinux-python for overwrite Apache config file
+  yum:
+    name: libselinux-python
+
+#- name: add listen port for Apache for SSL access (specification of Codeanywhere)
+#  lineinfile:
+#    path: /etc/httpd/conf/httpd.conf
+#    insertafter: Listen\s80
+#    line: Listen 3000
+#  notify: restart apache
+
+- name: get current DocumentRoot
+  shell: grep "^DocumentRoot" /etc/httpd/conf/httpd.conf | awk '{print $2}' | sed -e 's/^"//' -e 's/"$//'
+  ignore_errors: yes
+  register: current_document_root
+
+- name: reset AllowOverride setting for Apache
+  replace:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: ^\s*AllowOverride\s+.*
+  notify: restart apache
+
+- name: enable all settings of .htaccess for Apache
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    insertafter: "{{ item }}"
+    line: "    AllowOverride All"
+  with_items:
+    - ^<Directory\s/>$
+    - '^<Directory\s"{{ current_document_root.stdout }}">$'
+  notify: restart apache
+
+- name: restore default setting for Apache 1
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    insertafter: "{{ item }}"
+    line: "    AllowOverride None"
+  with_items:
+    - ^<Directory\s"/var/www/icons">$
+    - ^<Directory\s"/var/www/cgi-bin">$
+  notify: restart apache
+
+- name: restore default setting for Apache 2
+  lineinfile:
+    path: /etc/httpd/conf/httpd.conf
+    insertafter: ^\s\s\s\s<Directory\s"/var/www/error">$
+    line: "        AllowOverride None"
+  notify: restart apache
+
+- name: enable icon for Apache
+  replace:
+    path: /etc/httpd/conf/httpd.conf
+    regexp: ^AddIcon\s+/icons/bomb.gif\s+/core
+    replace: AddIcon /icons/bomb.gif core
+  notify: restart apache
+
+- name: set logrotate for Symfony3
+  template:
+    src: symfony3.j2
+    dest: /etc/logrotate.d/symfony3
+    owner: root
+    group: root
+    mode: 0644
