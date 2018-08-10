@@ -37,16 +37,18 @@
     insertafter: "{{ item }}"
     line: "    AllowOverride None"
   with_items:
-    - ^<Directory\s"/var/www/icons">$
     - ^<Directory\s"/var/www/cgi-bin">$
+# ↓ For Apache 2.2 only
+#    - ^<Directory\s"/var/www/icons">$
   notify: restart apache
 
-- name: restore default setting for Apache 2
-  lineinfile:
-    path: /etc/httpd/conf/httpd.conf
-    insertafter: ^\s\s\s\s<Directory\s"/var/www/error">$
-    line: "        AllowOverride None"
-  notify: restart apache
+# ↓ For Apache 2.2 only
+#- name: restore default setting for Apache 2
+#  lineinfile:
+#    path: /etc/httpd/conf/httpd.conf
+#    insertafter: ^\s\s\s\s<Directory\s"/var/www/error">$
+#    line: "        AllowOverride None"
+#  notify: restart apache
 
 - name: enable icon for Apache
   replace:
